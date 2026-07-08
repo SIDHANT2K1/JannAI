@@ -1,0 +1,16 @@
+{
+  "name": "jannai",
+  "version": "1.0.0",
+  "description": "JannAI — Civic Complaint & Constituency Development Planning",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && node server.js",
+    "dev:frontend": "cd frontend && npx vite --host",
+    "seed": "cd backend && node db/seed.js",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
