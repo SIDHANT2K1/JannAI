@@ -12,14 +12,7 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-// Clean up database if it was partially created with schema errors
-if (fs.existsSync(dbPath)) {
-  try {
-    fs.unlinkSync(dbPath);
-  } catch (err) {
-    console.warn("Could not remove old DB file, attempting to recreate tables", err);
-  }
-}
+// Initialize SQLite Schema
 
 const db = new Database(dbPath, { verbose: null });
 

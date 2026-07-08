@@ -205,13 +205,15 @@ function getMockResponse(type, prompt) {
     });
   }
 
+  const promptLower = prompt.toLowerCase();
+
   // Text Prompt Routing (Classify vs Match Plan vs Report)
-  if (prompt.includes('target JSON Schema') && prompt.includes('recommendedDevelopmentProject')) {
+  if (promptLower.includes('target json schema') && promptLower.includes('recommendeddevelopmentproject')) {
     // Classification Mock
     const categories = ['roads', 'water', 'health', 'education', 'sanitation'];
     let matchedCat = 'water';
     for (const cat of categories) {
-      if (prompt.toLowerCase().includes(cat)) {
+      if (promptLower.includes(cat)) {
         matchedCat = cat;
         break;
       }
@@ -240,7 +242,7 @@ function getMockResponse(type, prompt) {
     });
   }
 
-  if (prompt.includes('matched') && prompt.includes('planId')) {
+  if (promptLower.includes('matched') && promptLower.includes('planid')) {
     // Match Plan Mock
     // Randomly match or not
     const match = Math.random() > 0.4;
@@ -253,7 +255,7 @@ function getMockResponse(type, prompt) {
     });
   }
 
-  if (prompt.includes('Constituency Development Status Report')) {
+  if (promptLower.includes('constituency development status report')) {
     // Narrative Report Mock
     return `
 # Constituency Development Status Report (Mocked AI Analysis)

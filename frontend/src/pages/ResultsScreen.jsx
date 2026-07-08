@@ -82,8 +82,10 @@ function ResultsScreen() {
             );
             setNearbyIssues(filtered);
           }
+          setLoading(false);
         } else if (data.status === 'failed') {
           setError(data.error || 'The pipeline failed to complete successfully.');
+          setLoading(false);
         } else {
           // If still processing, redirect back to processing
           navigate(`/processing/${jobId}`);
@@ -91,7 +93,6 @@ function ResultsScreen() {
       } catch (err) {
         console.error(err);
         setError('Error loading complaint status details.');
-      } finally {
         setLoading(false);
       }
     };
@@ -121,6 +122,10 @@ function ResultsScreen() {
         </Link>
       </div>
     );
+  }
+
+  if (!jobData) {
+    return null;
   }
 
   const { classification, priority, planMatch, actionTips, coordinates } = jobData;

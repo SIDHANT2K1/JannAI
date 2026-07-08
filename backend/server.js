@@ -11,11 +11,17 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Create uploads directory if it does not exist
+// Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+// Serve built frontend static files
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
+// Fallback for SPA routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'));
+});
 
 // Serve uploaded media files statically
 app.use('/uploads', express.static(uploadsDir));

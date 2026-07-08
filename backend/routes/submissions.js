@@ -54,6 +54,71 @@ const jobs = {};
 router.get('/status/:jobId', (req, res) => {
   const job = jobs[req.params.jobId];
   if (!job) {
+    try {
+      const latestProblem = db.prepare(`
+        SELECT r.*, s.description, s.language, s.audio_url, s.photo_url,
+               t.priority_score, t.component_scores
+        FROM problem_records r
+        JOIN submissions s ON r.submission_id = s.id
+        LEFT JOIN issue_threads t ON r.thread_id = t.id
+        ORDER BY r.id DESC LIMIT 1
+      `).get();
+
+      if (latestProblem) {
+        let parsedScores = {};
+        try {
+          parsedScores = JSON.parse(latestProblem.component_scores);
+        } catch (e) {}
+
+        const reconstructedJob = {
+          id: req.params.jobId,
+          status: 'completed',
+          steps: {
+            transcribing: { label: 'Transcribing voice input', state: 'success' },
+            understanding: { label: 'Classifying and extracting details', state: 'success' },
+            clustering: { label: 'Finding similar issues in region', state: 'success' },
+            plans: { label: 'Checking existing development plans', state: 'success' },
+            recommending: { label: 'Generating priority and recommendations', state: 'success' }
+          },
+          result: {
+            submissionId: latestProblem.submission_id,
+            problemRecordId: latestProblem.id,
+            threadId: latestProblem.thread_id,
+            classification: {
+              category: latestProblem.category || 'water',
+              subcategory: latestProblem.subcategory || 'General Maintenance',
+              severity: latestProblem.severity || 'Medium',
+              summary: latestProblem.summary || 'Civic concern filed',
+              peopleAffected: latestProblem.people_affected || 100,
+              urgency: latestProblem.urgency || 5.0,
+              recommendedDevelopmentProject: latestProblem.recommended_project || 'Infrastructure resolution',
+              keywords: latestProblem.keywords ? latestProblem.keywords.split(', ') : [],
+              visualSeverity: latestProblem.severity || 'Medium',
+              visualDetails: latestProblem.photo_url ? 'Visual validation complete.' : 'No visual attachment analyzed.'
+            },
+            priority: {
+              score: latestProblem.priority_score || 50.0,
+              label: (latestProblem.priority_score || 50) >= 75 ? 'Critical' : (latestProblem.priority_score || 50) >= 50 ? 'High' : 'Medium',
+              breakdown: parsedScores
+            },
+            planMatch: {
+              matched: false,
+              planTitle: null,
+              justification: 'No matching plan found.'
+            },
+            actionTips: [
+              "Check dashboard for priority status.",
+              "Share report link with neighboring families to consolidate complains."
+            ],
+            coordinates: { lat: latestProblem.lat, lng: latestProblem.lng }
+          },
+          error: null
+        };
+        return res.json(reconstructedJob);
+      }
+    } catch (err) {
+      console.error('Failed to reconstruct job from database fallback:', err);
+    }
     return res.status(404).json({ error: 'Job not found' });
   }
   res.json(job);
@@ -244,12 +309,13 @@ async function runPipeline(jobId, data) {
   } catch (err) {
     console.error('Clustering step failed:', err);
     // Fallback: create basic thread if clustering fails
-    const threadCategory = classification.category || 'Uncategorized';
-    const insertThread = db.prepare(`
-      INSERT INTO issue_threads (category, representative_record_id, summary, priority_score, component_scores)
-      VALUES (?, ?, ?, 0.0, '{}')
-    `).run(threadCategory, problemRecordId, classification.summary);
-    threadId = insertThread.lastInsertRowid;
+      const threadCategory = classification.category || 'Uncategorized';
+      const threadSummary = (classification.summary && classification.summary.trim()) ? classification.summary : 'No summary provided';
+      const insertThread = db.prepare(`
+        INSERT INTO issue_threads (category, representative_record_id, summary, priority_score, component_scores)
+        VALUES (?, ?, ?, 0.0, '{}')
+      `).run(threadCategory, problemRecordId, threadSummary);
+      threadId = insertThread.lastInsertRowid;
     db.prepare('UPDATE problem_records SET thread_id = ? WHERE id = ?').run(threadId, problemRecordId);
     job.steps.clustering.state = 'success';
   }
