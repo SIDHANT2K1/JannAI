@@ -172,7 +172,8 @@ function SubmitComplaint() {
     }
 
     try {
-      const response = await fetch('/api/submissions', {
+      const apiBase = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/*$/, '') : '';
+    const response = await fetch(`${apiBase}/api/submissions`, {
         method: 'POST',
         body: formData,
       });
